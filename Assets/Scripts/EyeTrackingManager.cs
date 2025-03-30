@@ -7,9 +7,9 @@ public class EyeTrackingManager : MonoBehaviour
 {
     public Transform Origin;
     public GameObject EyeCoordinates;
-    public GameObject Models;
+    //public GameObject Models;
     public Transform Greenpoint;
-    public GameObject SpotLight;
+    //public GameObject SpotLight;
     public TMP_Text GazeOffsetText;
     
     private Vector3 combineEyeGazeVector;
@@ -30,7 +30,6 @@ public class EyeTrackingManager : MonoBehaviour
 
     private Transform selectedObj;
 
-    private bool wasPressed;
     void Start()
     {
         combineEyeGazeOriginOffset = Vector3.zero;
@@ -61,16 +60,11 @@ public class EyeTrackingManager : MonoBehaviour
         combineEyeGazeOriginInWorldSpace = originPoseMatrix.MultiplyPoint(headPoseMatrix.MultiplyPoint(combineEyeGazeOrigin));
         combineEyeGazeVectorInWorldSpace = originPoseMatrix.MultiplyVector(headPoseMatrix.MultiplyVector(combineEyeGazeVector));
 
-        SpotLight.transform.position = combineEyeGazeOriginInWorldSpace;
-        SpotLight.transform.rotation = Quaternion.LookRotation(combineEyeGazeVectorInWorldSpace, Vector3.up);
+        //SpotLight.transform.position = combineEyeGazeOriginInWorldSpace;
+        //SpotLight.transform.rotation = Quaternion.LookRotation(combineEyeGazeVectorInWorldSpace, Vector3.up);
 
         GazeTargetControl(combineEyeGazeOriginInWorldSpace, combineEyeGazeVectorInWorldSpace);
         
-    }
-
-    void CalculatePupilDiameter()
-    {
-        PXR_EyeTracking eyeTrackingData = new PXR_EyeTracking();
     }
 
 
