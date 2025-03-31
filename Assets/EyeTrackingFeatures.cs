@@ -1,44 +1,39 @@
 using UnityEngine;
 using Unity.XR.PXR;
 using System.IO;
+using System.Collections;
+using System.Collections.Generic;
 
 public class EyeTrackingFeatures : MonoBehaviour
 {
+    public enum FeatureType { Blink, Fixation, Saccade, MicroSaccade }
+
     private System.Diagnostics.Stopwatch sessionTimer = new System.Diagnostics.Stopwatch();
 
     private int sessionNumber = 0;
 
-    string durationOfBlinksText;
-    string blinksPerSecondText;
+    private string[] featureDurationArray = new string[3];
+    private string[] featurePerSecondArray = new string[4];
+    private string saccadeDirectionText;
 
-    string fixationDurationText;
-    string fixationsPerSecondText;
+    private Vector3 previousGaze;
+    private Vector3 currentGaze;
 
-    private float blinkStartTime;
-    private bool blinkInProgress;
-    private int numberOfBlinksThisSecond;
+    private float previousVelocity;
 
-    Vector3 previousGaze;
-    Vector3 currentGaze;
+    private float gazeAngularVelocity = 0;
+    private float gazeAcceleration = 0;
 
-    private float fixationStartTime;
-    private int numberOfFixationsThisSecond;
+    private int[] featureCountPerSecond = { 0, 0}; //Blinks = 0 and Fixations = 1
 
-    private void Awake()
-    {
-        
-    }
+    private List<EyeFeature> eyeFeatures = new List<EyeFeature>();
 
     private void Update()
     {
         if(sessionTimer != null && sessionTimer.IsRunning)
         {
-            GetEyeTrackingFeatures();
-
-            if(blinkInProgress)
-            {
-                CheckBlink();
-            }
+            gazeAngularVelocity = GetAngularVelocity();
+            TrackEyeTrackingFeatures();
         }
     }
 
@@ -57,106 +52,186 @@ public class EyeTrackingFeatures : MonoBehaviour
         }
     }
 
-    private void GetEyeTrackingFeatures()
+    private void TrackEyeTrackingFeatures()
     {
-        #region Calculate Blinks (Number of Blinks per Second & Duration) 
+        RecordFeature(FeatureType.Blink, 50);
+        RecordFeature(FeatureType.Fixation, 300);
+        RecordFeature(FeatureType.Saccade, 30);
+    }
 
-        //Openness 0.0 indicates closed, 1.0 indicates open
+    private void RecordFeature(FeatureType type, float minDuration)
+    {
+        EyeFeature feature = GetEyeFeature(type);
+
+        bool isFeatureActive = false;
+        
+        switch(type)
+        {
+            case FeatureType.Blink:
+                isFeatureActive = IsEyesClosed(); //Blink detected
+                break;
+            case FeatureType.Fixation:
+                isFeatureActive = gazeAngularVelocity < 20; //Fixation detected
+                break;
+            case FeatureType.Saccade:
+                isFeatureActive = gazeAngularVelocity > 35 && gazeAcceleration > 400 && CalculateSaccadeAmplitude() > 5; //Saccade detected
+                break;
+            case FeatureType.MicroSaccade:
+                
+                EyeFeature fixation = GetEyeFeature(FeatureType.Fixation);
+                EyeFeature saccade = GetEyeFeature(FeatureType.Saccade);
+
+                if(fixation != null)
+                {
+                    isFeatureActive = gazeAngularVelocity < 20 && saccade != null && fixation.featureDuration >= 400; //Micro-Saccade detected
+                }
+                break;
+            default:
+                break;
+        }
+
+        if(isFeatureActive)
+        {
+            if(feature == null) //Feature just started
+            {
+                feature = new EyeFeature(type);
+                feature.featureStartTime = Time.time * 1000; //Convert to milliseconds
+                eyeFeatures.Add(feature);
+            }
+            else
+            {
+                feature.featureDuration = (Time.time * 1000) - feature.featureStartTime;
+            }
+        }
+        else
+        {
+            if(feature != null)
+            {
+                feature.featureDuration = (Time.time * 1000) - feature.featureStartTime;
+
+                if(feature.featureDuration > minDuration) //Valid
+                {
+                    if(feature.featureDuration < 1000) // Happened this second
+                    {
+                        featureCountPerSecond[(int)type]++;
+                    }
+
+                    //Assign to string for writing to file at end of session
+                    featureDurationArray[(int)type] += feature.featureDuration.ToString() + "\n"; //Record the duration of the feature
+
+                    //Assign to string for Saccade direction (if applicable)
+                    if(type == FeatureType.Saccade)
+                    {
+                        PXR_EyeTracking.GetFoveatedGazeDirection(out Vector3 gazeDirection);
+                        gazeDirection.Normalize();
+
+                        Vector3 previousDirection = new Vector3(previousGaze.x, 0, previousGaze.z).normalized;
+                        Vector3 currentDirection = new Vector3(currentGaze.x, 0, currentGaze.z).normalized;
+
+                        float saccadeAngle = Vector3.SignedAngle(previousDirection, currentDirection, Vector3.up);
+
+                        if(saccadeAngle < 0)
+                        {
+                            saccadeAngle += 360; //Convert to positive angle;
+                        }
+
+                        saccadeDirectionText += saccadeAngle.ToString() + "\n"; //Record the angle of the saccade
+                    }
+                }
+                
+                eyeFeatures.Remove(feature); //Blink was too short, remove it
+            }
+        }
+    }
+
+    #region Eye Properties
+
+    private float GetAngularVelocity()
+    {
+        PXR_EyeTracking.GetFoveatedGazeDirection(out Vector3 gazeDirection);
+        currentGaze = gazeDirection.normalized;
+
+        float angleVelocity = 0;
+        float deltaTime = Time.deltaTime;
+
+        if (previousGaze != Vector3.zero && deltaTime > 0) 
+        {
+            float dotProduct = Vector3.Dot(previousGaze, currentGaze);
+            dotProduct = Mathf.Clamp(dotProduct, -1.0f, 1.0f);
+
+            float angleRadians = Mathf.Acos(dotProduct);
+            float angleDegrees = Mathf.Rad2Deg * angleRadians;
+
+            angleVelocity = angleDegrees / deltaTime; // Convert to velocity
+        }
+
+        //Compute acceleration
+        gazeAcceleration = (angleVelocity - previousVelocity) / deltaTime;
+        previousVelocity = angleVelocity;
+
+        previousGaze = currentGaze;
+        return angleVelocity;
+    }
+
+    private bool IsEyesClosed()
+    {
         PXR_EyeTracking.GetLeftEyeGazeOpenness(out float leftEyeOpenness);
         PXR_EyeTracking.GetRightEyeGazeOpenness(out float rightEyeOpenness);
 
         if(leftEyeOpenness < 0.25f && rightEyeOpenness < 0.25f) //Eye closed detected, check if min duration matches 50ms
         {
-            if(blinkStartTime == 0)
-            {
-                blinkStartTime = Time.time;
-                Invoke("CheckBlink", 0.05f); //Invoke CheckBlink after 50ms
-            }
+            return true;
         }
-
-        #endregion
-
-        #region Fixation (Stillness of Eye Movement overtime)
-        CheckFixation();
-        #endregion
-    }
-
-    private void CheckBlink() //Calls after 50ms
-    {
-        blinkInProgress = true;
-
-        PXR_EyeTracking.GetLeftEyeGazeOpenness(out float leftEyeOpenness);
-        PXR_EyeTracking.GetRightEyeGazeOpenness(out float rightEyeOpenness);
-
-        if(leftEyeOpenness > 0.5f && rightEyeOpenness > 0.5f)
+        else
         {
-            if(blinkStartTime == Time.time)
-            {
-                numberOfBlinksThisSecond++;
-            }
-            else
-            {
-                blinksPerSecondText += "\n" + numberOfBlinksThisSecond.ToString(); //Number of blinks in this second
-                numberOfBlinksThisSecond = 0;
-            }
-
-            durationOfBlinksText += "\n" + (blinkStartTime - Time.time).ToString(); //Duration of blink in seconds
-            Debug.Log("Blink detected!");
-            blinkStartTime = 0;
-            blinkInProgress = false;
+            return false;
         }
     }
 
-    private void CheckFixation()
+    private float CalculateSaccadeAmplitude()
     {
-         PXR_EyeTracking.GetFoveatedGazeDirection(out Vector3 gazeDirection);
-        currentGaze = gazeDirection;
+        PXR_EyeTracking.GetFoveatedGazeDirection(out Vector3 gazeDirection);
+        currentGaze = gazeDirection.normalized;
 
-        if(previousGaze != Vector3.zero) //We can check for fixation
+        float dotProduct = Vector3.Dot(previousGaze, currentGaze);
+        dotProduct = Mathf.Clamp(dotProduct, -1.0f, 1.0f);
+
+        float angleRadians = Mathf.Acos(dotProduct);
+        float angleDegrees = Mathf.Rad2Deg * angleRadians;
+
+        return angleDegrees;
+    }
+
+
+    private EyeFeature GetEyeFeature(FeatureType featureType)
+    {
+        foreach(EyeFeature feature in eyeFeatures)
         {
-            //Calculate Gaze Angle Change
-            previousGaze.Normalize();
-            currentGaze.Normalize();
-
-            float dotProduct = Vector3.Dot(previousGaze, currentGaze);
-            dotProduct = Mathf.Clamp(dotProduct, -1.0f, 1.0f); //Clamp to avoid NaN
-
-            float angleRadians = Mathf.Acos(dotProduct);
-            float angleDegrees = Mathf.Rad2Deg * angleRadians;
-
-            if(angleDegrees < 2.0f) //If angle is less than 2 degrees, it is a fixation
+            if(feature.featureType == featureType)
             {
-                fixationStartTime = Time.time; //Start fixation timer
-            }
-            else
-            {
-                if(fixationStartTime == Time.time)
-                {
-                    numberOfFixationsThisSecond++;
-                }
-                else
-                {
-                    fixationsPerSecondText += "\n" + numberOfFixationsThisSecond.ToString(); //Number of fixations in this second
-                    numberOfFixationsThisSecond = 0;
-                }
-
-                float fixationDuration = Time.time - fixationStartTime; //Calculate fixation duration
-                fixationDurationText += "\n" + fixationDuration.ToString(); //Duration of fixation in seconds
+                return feature;
             }
         }
 
-        previousGaze = currentGaze;
+        return null;
     }
+
+    #endregion
+
+    #region Session Management
 
     private void StartSession()
     {
         sessionTimer.Start();
         sessionNumber++;
 
-        durationOfBlinksText = "";
-        blinksPerSecondText = "";
-        fixationDurationText = "";
-        fixationsPerSecondText = "";
+        for(int i = 0; i < 2; i++)
+        {
+            featureDurationArray[i] = "";
+            featureCountPerSecond[i] = 0;
+        }   
+
+        StartCoroutine(PerSecondTimer());
     }
 
     private void EndSession()
@@ -167,14 +242,41 @@ public class EyeTrackingFeatures : MonoBehaviour
         
         WriteFile(sessionDuration.ToString(), "SessionDuration");
 
-        WriteFile(durationOfBlinksText, "DurationOfBlinks");
-        WriteFile(blinksPerSecondText, "BlinksPerSecond");
+        WriteFile(featureDurationArray[(int)FeatureType.Blink], "BlinksDuration");
+        WriteFile(featurePerSecondArray[(int)FeatureType.Blink], "BlinksPerSecond");
 
-        WriteFile(fixationDurationText, "DurationsOfFixations");
-        WriteFile(fixationsPerSecondText, "FixationsPerSecond");
-        
+        WriteFile(featureDurationArray[(int)FeatureType.Fixation], "FixationsDuration");
+        WriteFile(featurePerSecondArray[(int)FeatureType.Fixation], "FixationsPerSecond");
     }
 
-    //The duration of each blink
-    //Blinks per second
+    private IEnumerator PerSecondTimer() //For recording events every second that the session is active
+    {
+        yield return new WaitForSeconds(1);
+
+        for(int i = 0; i < 4; i++)
+        {
+            featurePerSecondArray[i] += featureCountPerSecond[0].ToString() + "\n";
+            featureCountPerSecond[i] = 0;
+        }
+
+        if(sessionTimer.IsRunning)
+        {
+            StartCoroutine(PerSecondTimer());
+        }
+    }
+
+    #endregion
+}
+
+public class EyeFeature
+{
+    public float featureStartTime;
+    public float featureDuration;
+
+    public EyeTrackingFeatures.FeatureType featureType;
+
+    public EyeFeature(EyeTrackingFeatures.FeatureType type)
+    {
+        featureType = type;
+    }
 }
