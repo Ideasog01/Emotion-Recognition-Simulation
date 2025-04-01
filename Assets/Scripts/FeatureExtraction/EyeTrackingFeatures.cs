@@ -8,7 +8,7 @@ public class EyeTrackingFeatures : MonoBehaviour
 {
     public enum FeatureType { Blink, Fixation, Saccade, MicroSaccade }
 
-    [SerializeField] [ReadOnly] private int sessionNumber = 0;
+    [SerializeField] private int sessionNumber = 0;
 
     [Header("Blink Thresholds")]
     [SerializeField] private float blinkMinimumDuration = 50; //Minimum duration of blink in milliseconds
@@ -73,21 +73,6 @@ public class EyeTrackingFeatures : MonoBehaviour
             _previousGaze = _currentGaze;
 
             TrackEyeTrackingFeatures();
-        }
-    }
-
-    private void WriteFile(string content, string dataType)
-    {
-        string filePath = Path.Combine(Application.persistentDataPath, "ET_Data_S" + sessionNumber.ToString() + "_" + dataType + ".txt");
-        
-        try
-        {
-            File.WriteAllText(filePath, content);
-            Debug.Log("Eye Tracking Data written to: " + filePath);
-        }
-        catch (IOException e)
-        {
-            Debug.LogError("Failed to write Eye Tracking Data: " + e.Message);
         }
     }
 
@@ -293,7 +278,7 @@ public class EyeTrackingFeatures : MonoBehaviour
 
     #region Session Management
 
-    private void StartSession()
+    public void StartSession()
     {
         _sessionTimer.Reset();
         for(int i = 0; i < 2; i++)
@@ -320,29 +305,29 @@ public class EyeTrackingFeatures : MonoBehaviour
         StartCoroutine(PerSecondTimer());
     }
 
-    private void EndSession()
+    public void EndSession()
     {
         //Write data to files
         _sessionTimer.Stop();
         float sessionDuration = (float)_sessionTimer.Elapsed.TotalSeconds; //Total time of session in seconds
         
-        WriteFile(sessionDuration.ToString(), "SessionDuration");
+        SaveManager.WriteFile(sessionDuration.ToString(), "ET_Data_S" + sessionNumber.ToString() + "_" + "SessionDuration" + ".txt");
 
-        WriteFile(_featureDurationArray[(int)FeatureType.Fixation], "FixationsDuration");
-        WriteFile(_featurePerSecondArray[(int)FeatureType.Fixation], "FixationsPerSecond");
+        SaveManager.WriteFile(_featureDurationArray[(int)FeatureType.Fixation], "ET_Data_S" + sessionNumber.ToString() + "_" + "FixationsDuration" + ".txt");
+        SaveManager.WriteFile(_featurePerSecondArray[(int)FeatureType.Fixation], "ET_Data_S" + sessionNumber.ToString() + "_" + "FixationsPerSecond" + ".txt");
         
-        WriteFile(_featurePerSecondArray[(int)FeatureType.MicroSaccade], "MicroSaccadesPerSecond");
-        WriteFile(_microSaccadePeakVelocityText, "_microSaccadePeakVelocity");
-        WriteFile(microSaccadeDirectionText, "MicroSaccadeDirection");
-        WriteFile(microSaccadeHorizontalAmplitudeText, "MicroSaccadeHorizontalAmplitude");
-        WriteFile(microSaccadeVerticalAmplitudeText, "MicroSaccadeVerticalAmplitude");
+        SaveManager.WriteFile(_featurePerSecondArray[(int)FeatureType.MicroSaccade], "ET_Data_S" + sessionNumber.ToString() + "_" + "MicroSaccadesPerSecond" + ".txt");
+        SaveManager.WriteFile(_microSaccadePeakVelocityText, "ET_Data_S" + sessionNumber.ToString() + "_" + "MicroSaccadePeakVelocity" + ".txt");
+        SaveManager.WriteFile(microSaccadeDirectionText, "ET_Data_S" + sessionNumber.ToString() + "_" + "MicroSaccadeDirection" + ".txt");
+        SaveManager.WriteFile(microSaccadeHorizontalAmplitudeText, "ET_Data_S" + sessionNumber.ToString() + "_" + "MicroSaccadeHorizontalAmplitude" + ".txt");
+        SaveManager.WriteFile(microSaccadeVerticalAmplitudeText, "ET_Data_S" + sessionNumber.ToString() + "_" + "MicroSaccadeVerticalAmplitude" + ".txt");
 
-        WriteFile(_featurePerSecondArray[(int)FeatureType.Saccade], "SaccadesPerSecond");
-        WriteFile(_featureDurationArray[(int)FeatureType.Saccade], "SaccadesDuration");
-        WriteFile(saccadeDirectionText, "SaccadeDirection");
+        SaveManager.WriteFile(_featurePerSecondArray[(int)FeatureType.Saccade], "ET_Data_S" + sessionNumber.ToString() + "_" + "SaccadesPerSecond" + ".txt");
+        SaveManager.WriteFile(_featureDurationArray[(int)FeatureType.Saccade], "ET_Data_S" + sessionNumber.ToString() + "_" + "SaccadesDuration" + ".txt");
+        SaveManager.WriteFile(saccadeDirectionText, "ET_Data_S" + sessionNumber.ToString() + "_" + "SaccadeDirection" + ".txt");
 
-        WriteFile(_featurePerSecondArray[(int)FeatureType.Blink], "BlinksPerSecond");
-        WriteFile(_featureDurationArray[(int)FeatureType.Blink], "BlinksDuration");
+        SaveManager.WriteFile(_featurePerSecondArray[(int)FeatureType.Blink], "ET_Data_S" + sessionNumber.ToString() + "_" + "BlinksPerSecond" + ".txt");
+        SaveManager.WriteFile(_featureDurationArray[(int)FeatureType.Blink], "ET_Data_S" + sessionNumber.ToString() + "_" + "BlinksDuration" + ".txt");
     }
 
     private IEnumerator PerSecondTimer() //For recording events every second that the session is active
