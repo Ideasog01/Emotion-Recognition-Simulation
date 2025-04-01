@@ -24,6 +24,12 @@ public class InterfaceManager : MonoBehaviour
 
     [SerializeField] private Sprite[] imageStimuliArray;
 
+    [Header("Baseline Menu")]
+
+    [SerializeField] private TextMeshProUGUI baselineTimerText;
+
+    [SerializeField] private Button baselineContinueButton;
+
     public void ShowOptions(AssessmentManager.AssessmentMetric metric)
     {
         optionDisplay.SetActive(true);
@@ -63,5 +69,17 @@ public class InterfaceManager : MonoBehaviour
     {
         imageStimuli.gameObject.SetActive(true);
         imageStimuli.sprite = imageStimuliArray[AssessmentManager.ImageStimuliIndex];
+    }
+
+    public void UpdateBaslineMenu(int timer)
+    {
+        int minute = timer / 60;
+        int second = timer % 60;
+        baselineTimerText.text = string.Format("{0:D2}:{1:D2}", minute, second);
+
+        if(timer <= 0)
+        {
+            baselineContinueButton.interactable = true;
+        }
     }
 }

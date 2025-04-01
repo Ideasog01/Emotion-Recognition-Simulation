@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class AssessmentManager : MonoBehaviour
@@ -9,6 +8,8 @@ public class AssessmentManager : MonoBehaviour
     public static AssessmentMetric CurrentMetric = AssessmentMetric.Arousal;
 
     public static int ImageStimuliIndex;
+
+    [SerializeField] private int baselineTimer = 120;
 
     private int arousalRating;
     private int valenceRating;
@@ -20,5 +21,28 @@ public class AssessmentManager : MonoBehaviour
     {
         ratingText += arousalRating + " " + valenceRating + " " + dominanceRating + "\n";
         ImageStimuliIndex++;
+    }
+
+    public void StartBaselineTimer()
+    {
+        GameManager.InterfaceManager.UpdateBaslineMenu(baselineTimer);
+        StartCoroutine(BaselineTimer());
+    }
+
+    private IEnumerator BaselineTimer()
+    {
+        yield return new WaitForSeconds(1);
+        baselineTimer--;
+
+        GameManager.InterfaceManager.UpdateBaslineMenu(baselineTimer);
+
+        if(baselineTimer > 0)
+        {
+            StartCoroutine(BaselineTimer());
+        }
+        else
+        {
+
+        }
     }
 }
