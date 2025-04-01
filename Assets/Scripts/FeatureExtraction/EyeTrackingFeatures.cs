@@ -313,21 +313,21 @@ public class EyeTrackingFeatures : MonoBehaviour
         
         SaveManager.WriteFile(sessionDuration.ToString(), "ET_Data_S" + sessionNumber.ToString() + "_" + "SessionDuration" + ".txt");
 
-        SaveManager.WriteFile(_featureDurationArray[(int)FeatureType.Fixation], "ET_Data_S" + sessionNumber.ToString() + "_" + "FixationsDuration" + ".txt");
-        SaveManager.WriteFile(_featurePerSecondArray[(int)FeatureType.Fixation], "ET_Data_S" + sessionNumber.ToString() + "_" + "FixationsPerSecond" + ".txt");
+        SaveManager.WriteFile(_featureDurationArray[(int)FeatureType.Fixation], "ET_Fixation_Data_S" + sessionNumber.ToString() + "_" + "FixationsDuration" + ".txt");
+        SaveManager.WriteFile(_featurePerSecondArray[(int)FeatureType.Fixation], "ET_Fixation_Data_S" + sessionNumber.ToString() + "_" + "FixationsPerSecond" + ".txt");
         
-        SaveManager.WriteFile(_featurePerSecondArray[(int)FeatureType.MicroSaccade], "ET_Data_S" + sessionNumber.ToString() + "_" + "MicroSaccadesPerSecond" + ".txt");
-        SaveManager.WriteFile(_microSaccadePeakVelocityText, "ET_Data_S" + sessionNumber.ToString() + "_" + "MicroSaccadePeakVelocity" + ".txt");
-        SaveManager.WriteFile(microSaccadeDirectionText, "ET_Data_S" + sessionNumber.ToString() + "_" + "MicroSaccadeDirection" + ".txt");
-        SaveManager.WriteFile(microSaccadeHorizontalAmplitudeText, "ET_Data_S" + sessionNumber.ToString() + "_" + "MicroSaccadeHorizontalAmplitude" + ".txt");
-        SaveManager.WriteFile(microSaccadeVerticalAmplitudeText, "ET_Data_S" + sessionNumber.ToString() + "_" + "MicroSaccadeVerticalAmplitude" + ".txt");
+        SaveManager.WriteFile(_featurePerSecondArray[(int)FeatureType.MicroSaccade], "ET_MicroSaccade_Data_S" + sessionNumber.ToString() + "_" + "MicroSaccadesPerSecond" + ".txt");
+        SaveManager.WriteFile(_microSaccadePeakVelocityText, "ET_MicroSaccade_Data_S" + sessionNumber.ToString() + "_" + "MicroSaccadePeakVelocity" + ".txt");
+        SaveManager.WriteFile(microSaccadeDirectionText, "ET_MicroSaccade_Data_S" + sessionNumber.ToString() + "_" + "MicroSaccadeDirection" + ".txt");
+        SaveManager.WriteFile(microSaccadeHorizontalAmplitudeText, "ET_MicroSaccade_Data_S" + sessionNumber.ToString() + "_" + "MicroSaccadeHorizontalAmplitude" + ".txt");
+        SaveManager.WriteFile(microSaccadeVerticalAmplitudeText, "ET_MicroSaccade_Data_S" + sessionNumber.ToString() + "_" + "MicroSaccadeVerticalAmplitude" + ".txt");
 
-        SaveManager.WriteFile(_featurePerSecondArray[(int)FeatureType.Saccade], "ET_Data_S" + sessionNumber.ToString() + "_" + "SaccadesPerSecond" + ".txt");
-        SaveManager.WriteFile(_featureDurationArray[(int)FeatureType.Saccade], "ET_Data_S" + sessionNumber.ToString() + "_" + "SaccadesDuration" + ".txt");
-        SaveManager.WriteFile(saccadeDirectionText, "ET_Data_S" + sessionNumber.ToString() + "_" + "SaccadeDirection" + ".txt");
+        SaveManager.WriteFile(_featurePerSecondArray[(int)FeatureType.Saccade], "ET_Saccade_Data_S" + sessionNumber.ToString() + "_" + "SaccadesPerSecond" + ".txt");
+        SaveManager.WriteFile(_featureDurationArray[(int)FeatureType.Saccade], "ET_Saccade_Data_S" + sessionNumber.ToString() + "_" + "SaccadesDuration" + ".txt");
+        SaveManager.WriteFile(saccadeDirectionText, "ET_Data_S" + sessionNumber.ToString() + "_" + "ET_SaccadeDirection" + ".txt");
 
-        SaveManager.WriteFile(_featurePerSecondArray[(int)FeatureType.Blink], "ET_Data_S" + sessionNumber.ToString() + "_" + "BlinksPerSecond" + ".txt");
-        SaveManager.WriteFile(_featureDurationArray[(int)FeatureType.Blink], "ET_Data_S" + sessionNumber.ToString() + "_" + "BlinksDuration" + ".txt");
+        SaveManager.WriteFile(_featurePerSecondArray[(int)FeatureType.Blink], "ET_Blink_Data_S" + sessionNumber.ToString() + "_" + "BlinksPerSecond" + ".txt");
+        SaveManager.WriteFile(_featureDurationArray[(int)FeatureType.Blink], "ET_Blink_Data_S" + sessionNumber.ToString() + "_" + "BlinksDuration" + ".txt");
     }
 
     private IEnumerator PerSecondTimer() //For recording events every second that the session is active

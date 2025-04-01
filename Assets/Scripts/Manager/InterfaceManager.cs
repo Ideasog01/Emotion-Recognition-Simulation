@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,6 +13,8 @@ public class InterfaceManager : MonoBehaviour
 
     [SerializeField] private GameObject optionDisplay;
 
+    [SerializeField] private GameObject endMenu;
+
     [Header("Assessment Images")]
 
     [SerializeField] private Sprite[] arousalImages;
@@ -20,9 +23,13 @@ public class InterfaceManager : MonoBehaviour
 
     [Header("Image Display")]
 
+    [SerializeField] private GameObject imageDisplayCanvas;
+
     [SerializeField] private Image imageStimuli;
 
-    [SerializeField] private Sprite[] imageStimuliArray;
+    [SerializeField] private Animator imageDisplayAnimator;
+
+    [SerializeField] private TextMeshProUGUI countdownText;
 
     [Header("Baseline Menu")]
 
@@ -30,8 +37,11 @@ public class InterfaceManager : MonoBehaviour
 
     [SerializeField] private Button baselineContinueButton;
 
+    private int _countdownTimer;
+
     public void ShowOptions(AssessmentManager.AssessmentMetric metric)
     {
+        imageDisplayCanvas.SetActive(false);
         optionDisplay.SetActive(true);
 
         for(int i = 0; i < assessmentImageArray.Length; i++)
@@ -39,12 +49,15 @@ public class InterfaceManager : MonoBehaviour
             switch(metric)
             {
                 case AssessmentManager.AssessmentMetric.Arousal:
+                    questionText.text = "How strong was your emotion?";
                     assessmentImageArray[i].sprite = arousalImages[i];
                     break;
                 case AssessmentManager.AssessmentMetric.Valence:
+                questionText.text = "How positive was your emotion?";
                     assessmentImageArray[i].sprite = valenceImages[i];
                     break;
                 case AssessmentManager.AssessmentMetric.Dominance:
+                    questionText.text = "How dominant was your emotion?";
                     assessmentImageArray[i].sprite = dominanceImages[i];
                     break;
             }
@@ -55,20 +68,53 @@ public class InterfaceManager : MonoBehaviour
     {
         GameManager.AssessmentManager.SelectAssessmentOption(index);
 
+        //Cycle through the metrics
         if(AssessmentManager.CurrentMetric == AssessmentManager.AssessmentMetric.Dominance)
         {
             optionDisplay.SetActive(false);
+            GameManager.AssessmentManager.DisplayImage();
+            return;
         }
-        else
+        else if(AssessmentManager.CurrentMetric == AssessmentManager.AssessmentMetric.Arousal)
         {
-            ShowOptions(AssessmentManager.CurrentMetric + 1);
+            AssessmentManager.CurrentMetric = AssessmentManager.AssessmentMetric.Valence;
         }
+        else if(AssessmentManager.CurrentMetric == AssessmentManager.AssessmentMetric.Valence)
+        {
+             AssessmentManager.CurrentMetric = AssessmentManager.AssessmentMetric.Dominance;
+        }
+
+        ShowOptions(AssessmentManager.CurrentMetric);
     }
 
     public void DisplayImageStimuli()
+    {   
+        imageDisplayCanvas.SetActive(true);
+        imageStimuli.gameObject.SetActive(false);
+        countdownText.gameObject.SetActive(true);
+
+        _countdownTimer = 3;
+        StartCoroutine(CountdownTimer());
+    }
+
+    private IEnumerator CountdownTimer()
     {
-        imageStimuli.gameObject.SetActive(true);
-        imageStimuli.sprite = imageStimuliArray[AssessmentManager.ImageStimuliIndex];
+        imageDisplayAnimator.SetTrigger("countdown");
+        countdownText.text = _countdownTimer.ToString();
+        yield return new WaitForSeconds(1f);
+
+        _countdownTimer--;
+
+        if(_countdownTimer > 0)
+        {
+            StartCoroutine(CountdownTimer());
+        }
+        else
+        {
+            countdownText.gameObject.SetActive(false);
+            imageStimuli.gameObject.SetActive(true);
+            imageStimuli.sprite = GameManager.AssessmentManager.imageStimuliArray[AssessmentManager.ImageStimuliIndex];
+        }
     }
 
     public void UpdateBaslineMenu(int timer)
@@ -81,5 +127,10 @@ public class InterfaceManager : MonoBehaviour
         {
             baselineContinueButton.interactable = true;
         }
+    }
+
+    public void DisplayEndMenu()
+    {
+        endMenu.SetActive(true);
     }
 }

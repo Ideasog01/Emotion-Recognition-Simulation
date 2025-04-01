@@ -12,14 +12,14 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         InterfaceManager = this.GetComponent<InterfaceManager>();
-        EyeTrackingFeatures = this.GetComponent<EyeTrackingFeatures>();
+        EyeTrackingFeatures = GameObject.Find("EyeTrackingManager").GetComponent<EyeTrackingFeatures>();
         AssessmentManager = this.GetComponent<AssessmentManager>();
         SaveManager = this.GetComponent<SaveManager>();
     }
 
     public void StartExperiment()
     {
-        
+        AssessmentManager.DisplayImage();
     }
 
     public void ExitApplication()
