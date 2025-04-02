@@ -29,6 +29,8 @@ public class EyeTrackingFeatures : MonoBehaviour
     [SerializeField] private float microSaccadeMaximumAngularVelocity = 20; //Maximum angular velocity for micro-saccade
     [SerializeField] private float microSaccadeFixationMinimumDurationThreshold = 400; //Minimum duration of fixation before micro-saccade
 
+    [SerializeField] private bool trackAtStart;
+
 
     private string[] _featureDurationArray = new string[3];
     private string[] _featurePerSecondArray = new string[4];
@@ -52,9 +54,20 @@ public class EyeTrackingFeatures : MonoBehaviour
 
     private System.Diagnostics.Stopwatch _sessionTimer = new System.Diagnostics.Stopwatch();
 
+    private bool _testStarted;
+
+    private void Start()
+    {
+	if(trackAtStart)
+	{
+	     StartCoroutine(TrackFeatureTest());
+	     Debug.Log("Tracking features");
+	}
+    }
+
     private void Update()
     {
-        if(_sessionTimer != null && _sessionTimer.IsRunning)
+        if(_testStarted || _sessionTimer != null && _sessionTimer.IsRunning)
         {
             PXR_EyeTracking.GetFoveatedGazeDirection(out Vector3 gazeDirection);
 
@@ -74,6 +87,18 @@ public class EyeTrackingFeatures : MonoBehaviour
 
             TrackEyeTrackingFeatures();
         }
+    }
+
+    private IEnumerator TrackFeatureTest()
+    {
+	yield return new WaitForSeconds(5);
+	_testStarted = true;
+	_sessionTimer.Start();
+	Debug.Log("Tracking has begun!");
+	yield return new WaitForSeconds(10);
+	_testStarted = false;
+	Debug.Log("Tracking finished");
+	EndSession();
     }
 
     #region Record Eye Features
